@@ -30,6 +30,11 @@ class ProjectsPage:
         if project_name not in project_names:
             raise Exception('Project does not exists')
 
+    def expect_project_not_exists(self, project_name):
+        project_names = self.get_projects_names()
+        if project_name in project_names:
+            raise Exception('Project exists')
+
     def open_project(self, project_index):
         projects_links_elements = self.driver.find_elements_by_css_selector(PROJECT_LINK_SELECTOR)
 
