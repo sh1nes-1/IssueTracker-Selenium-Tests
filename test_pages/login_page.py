@@ -56,7 +56,6 @@ class LoginPage:
 
     def _try_submit_login(self):
         current_url = self.driver.current_url
-
         submit_button = self.driver.find_element_by_css_selector(SUBMIT_BUTTON_SELECTOR)
         submit_button.click()
 
