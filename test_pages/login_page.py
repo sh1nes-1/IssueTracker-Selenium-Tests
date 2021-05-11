@@ -1,22 +1,22 @@
 from selenium.webdriver.remote.webdriver import WebDriver
 from test_pages.projects_page import ProjectsPage
-from utils import wait_url_changed, clear_input
+from utils import wait_url_changed, clear_input, wait_for_element
 
-LOGIN_URL_PART = '/login'
+
 EMAIL_FIELD_SELECTOR = '#email'
 PASSWORD_FIELD_SELECTOR = '#password'
 SUBMIT_BUTTON_SELECTOR = 'button[type=submit]'
+FORM_ERRORS_SELECTOR = '.ant-form-item-explain-error'
 REDIRECT_TIMEOUT = 3
+ELEMENT_VISIBLE_TIMEOUT = 2
 
 
 class LoginPage:
     def __init__(self, driver: WebDriver):
         self.driver = driver
 
-        if LOGIN_URL_PART not in self.driver.current_url:
-            raise Exception('This is not a login page')
-
     def type_email(self, email):
+        wait_for_element(self.driver, EMAIL_FIELD_SELECTOR, timeout=ELEMENT_VISIBLE_TIMEOUT)
         email_field = self.driver.find_element_by_css_selector(EMAIL_FIELD_SELECTOR)
 
         clear_input(email_field)
@@ -25,6 +25,7 @@ class LoginPage:
         return LoginPage(self.driver)
 
     def type_password(self, password):
+        wait_for_element(self.driver, PASSWORD_FIELD_SELECTOR, timeout=ELEMENT_VISIBLE_TIMEOUT)
         password_field = self.driver.find_element_by_css_selector(PASSWORD_FIELD_SELECTOR)
 
         clear_input(password_field)
@@ -39,24 +40,24 @@ class LoginPage:
         return self.submit_login_expecting_success()
 
     def submit_login_expecting_success(self):
-        is_success_login = self._try_submit_login()
-
-        if not is_success_login:
-            raise Exception('Expected login success but url is not changed')
+        current_url = self.driver.current_url
+        self._submit_login()
+        wait_url_changed(self.driver, current_url, timeout=REDIRECT_TIMEOUT)
 
         return ProjectsPage(self.driver)
 
     def submit_login_expecting_failure(self):
-        is_success_login = self._try_submit_login()
-
-        if is_success_login:
-            raise Exception('Expected login failure but url is changed')
+        self._submit_login()
 
         return LoginPage(self.driver)
 
-    def _try_submit_login(self):
-        current_url = self.driver.current_url
+    def get_form_errors(self):
+        wait_for_element(self.driver, FORM_ERRORS_SELECTOR, timeout=ELEMENT_VISIBLE_TIMEOUT)
+        form_errors_elements = self.driver.find_elements_by_css_selector(FORM_ERRORS_SELECTOR)
+
+        return [x.text for x in form_errors_elements]
+
+    def _submit_login(self):
+        wait_for_element(self.driver, SUBMIT_BUTTON_SELECTOR, timeout=ELEMENT_VISIBLE_TIMEOUT)
         submit_button = self.driver.find_element_by_css_selector(SUBMIT_BUTTON_SELECTOR)
         submit_button.click()
-
-        return wait_url_changed(self.driver, current_url, timeout=REDIRECT_TIMEOUT)

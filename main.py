@@ -1,6 +1,5 @@
 from selenium import webdriver
 from test_pages.login_page import LoginPage
-import time
 
 
 BASE_URL = 'http://localhost:3000/login'
@@ -25,29 +24,37 @@ def run_tests():
     driver = get_web_driver()
     driver.get(BASE_URL)
 
+    # login page tests
     login_page = LoginPage(driver)
 
     login_page.type_email(INVALID_USER_EMAIL)
     login_page.type_password(INVALID_USER_PASSWORD)
     login_page.submit_login_expecting_failure()
 
+    form_errors = login_page.get_form_errors()
+    assert len(form_errors) > 0
+
     projects_page = login_page.login_as(TEST_USER_EMAIL, TEST_USER_PASSWORD)
-    time.sleep(2)
 
+    # projects page tests
     projects_names = projects_page.get_projects_names()
-    projects_page.expect_project_exists(EXISTING_PROJECT_NAME)
-    projects_page.expect_project_not_exists(NOT_EXISTING_PROJECT_NAME)
+    assert EXISTING_PROJECT_NAME in projects_names
+    assert NOT_EXISTING_PROJECT_NAME not in projects_names
 
+    # issues page tests
     issues_page = projects_page.open_project(0)
-    time.sleep(2)
+    assert issues_page.get_project_name() == projects_names[0]
 
-    issues_page.expect_project_name(projects_names[0])
-    driver.close()
+    # settings page tests
+    project_settings_page = issues_page.open_project_settings()
+    assert project_settings_page.get_project_name() == projects_names[0]
+
+    print('All tests were passed successfully')
+    input()
 
 
 if __name__ == '__main__':
     try:
         run_tests()
-        print('All tests were passed successfully')
     except Exception as e:
         print('An exception was thrown during running tests: ' + str(e))
